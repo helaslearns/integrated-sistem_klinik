@@ -1,61 +1,109 @@
-class MaxHeap:
+class MinHeap:
     def __init__(self):
-        self.heap = []
+        self.data = []
+        
+    def isEmpty(self):
+        return len(self.data) == 0
 
-    def parent(self, i): return (i - 1) // 2
-    def left_child(self, i): return 2 * i + 1
-    def right_child(self, i): return 2 * i + 2
+    def _parent(self, index):
+        return ((index - 1) // 2)
+    
+    def _leftSide(self, index):
+        return (2 * index + 1)
 
-    # FIX (bug #2): the original code compared tingkat_keparahan directly,
-    # so two patients with equal severity had an arbitrary (non-FIFO) order
-    # -- verified: patients triaged A, B, C at equal severity could come
-    # back out as A, C, B. _priority_key adds id_pasien (arrival order) as
-    # a tie-breaker: earlier id_pasien wins when severity is equal.
-    def _priority_key(self, p):
-        return (p.tingkat_keparahan, -p.id_pasien)
+    def _rightSide(self, index):
+        return (2 * index + 2)
+    
+     # ---------- INSERT ----------
 
-    def insert(self, data):
-        self.heap.append(data)
-        self.heapify_up(len(self.heap) - 1)
+    def insert(self, pasien):
+        self.data.append(pasien)
+        self._heapify_up(len(self.data) - 1)
 
-    def heapify_up(self, i):
-        while i != 0 and self._priority_key(self.heap[self.parent(i)]) < self._priority_key(self.heap[i]):
-            self.heap[i], self.heap[self.parent(i)] = self.heap[self.parent(i)], self.heap[i]
-            i = self.parent(i)
+    def _heapify_up(self, index):
+        while index > 0:
+            parent_index = self._parent(index)
+            if self.data[index].no_rm < self.data[parent_index].no_rm:
+                self.data[index], self.data[parent_index] = self.data[parent_index], self.data[index]
+                index = parent_index
+            else:
+                break
+
+     # ---------- DELETE ROOT ----------
 
     def delete_root(self):
-        if len(self.heap) == 0:
+        if self.isEmpty():
             return None
-        if len(self.heap) == 1:
-            return self.heap.pop()
-
-        root = self.heap[0]
-        self.heap[0] = self.heap.pop()
-        self.heapify_down(0)
+        
+        root = self.data[0]
+        last_element = self.data.pop()
+        
+        if not self.isEmpty():
+            self.data[0] = last_element
+            self._heapify_down(0)
+        
         return root
+    
+    def _heapify_down(self, index):
+        n = len(self.data)
 
-    def heapify_down(self, i):
-        largest = i
-        l = self.left_child(i)
-        r = self.right_child(i)
-        n = len(self.heap)
+        while True:
+            left_index = self._leftSide(index)
+            right_index = self._rightSide(index)
+            small = index
 
-        if l < n and self._priority_key(self.heap[l]) > self._priority_key(self.heap[largest]):
-            largest = l
-        if r < n and self._priority_key(self.heap[r]) > self._priority_key(self.heap[largest]):
-            largest = r
+            if left_index < n and self.data[left_index].no_rm < self.data[small].no_rm:
+                small = left_index
+            if right_index < n and self.data[right_index].no_rm < self.data[small].no_rm:
+                small = right_index
+            if small != index:
+                self.data[index], self.data[small] = self.data[small], self.data[index]
+                index = small
+            else:
+                break
 
-        if largest != i:
-            self.heap[i], self.heap[largest] = self.heap[largest], self.heap[i]
-            self.heapify_down(largest)
-
+     # ---------- PEEK ----------
+    
     def peek(self):
-        return self.heap[0] if self.heap else None
-
+        return self.data[0] if not self.isEmpty() else None
+    
+    def size(self):
+        return len(self.data)
+    
     def display(self):
-        if not self.heap:
-            print("Tidak ada pasien di antrean dokter (IGD kosong).")
+        if self.isEmpty():
+            print("Heap is empty || Tumpukan Kosong || Size: 0")
             return
-        print("Antrean IGD berdasarkan Prioritas (Max-Heap):")
-        for p in self.heap:
-            print(f"- {p}")
+        
+        for idx, pasien in enumerate(self.data):
+            print(f"Index: {idx} || Data: {pasien} || Size: {self.size()}")
+
+     # ---------- VISUALISASI ----------
+
+    def displayHeap(self):
+        if self.isEmpty():
+            print("  (Heap kosong)")
+            return
+        
+        n = len(self.data)
+        level = 0
+        while (2 ** level) - 1 < n:
+            level += 1
+        
+        idx = 0
+        lebar_terminal = 60
+        for level in range(level):
+            jumlah_node_level = min(2 ** level, n - idx)
+            label_level = [f"{self.data[idx + i].prioritas}:{self.data[idx + i].nama}"
+                           for i in range(jumlah_node_level)]
+            baris = " ".join(label_level)
+            spasi = max((lebar_terminal - len(baris)) // 2, 0)
+            print(" " * spasi + baris)
+            idx += jumlah_node_level
+        
+        print("  (Format label: [prioritas]:[nama pasien], root = paling atas/prioritas tertinggi)")
+  
+
+
+
+    
