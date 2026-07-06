@@ -1,97 +1,133 @@
-import typing
-
-class AVLNode:
+class NodeBST:
     def __init__(self, data):
         self.data = data
-        self.left: typing.Any = None
-        self.right: typing.Any = None
-        self.height = 1  # height of this node's own subtree (leaf = 1)
+        self.left = None
+        self.right = None
 
-class BST:  # kept the name BST so the rest of the program doesn't need edits
+class BST:
     def __init__(self):
         self.root = None
+        self._size = 0
 
-    # ---------- public API (unchanged signatures) ----------
-    def insert(self, data):
-        self.root = self._insert_recursive(self.root, data)
+     # ---------- INSERT ----------
 
-    def search(self, id_pasien):
-        return self._search_recursive(self.root, id_pasien)
+    def insert(self, pasien):
+        self.root = self._insert(self.root, pasien)
 
-    def inorder_traversal(self, node):
-        if node:
-            self.inorder_traversal(node.left)
-            print(f"- {node.data}")
-            self.inorder_traversal(node.right)
-
-    def get_height(self, node):
-        return self._h(node)
-
-    def count_nodes(self, node):
+    def _insert(self, node, pasien):
         if node is None:
-            return 0
-        return 1 + self.count_nodes(node.left) + self.count_nodes(node.right)
-
-    # ---------- AVL internals ----------
-    def _h(self, node):
-        return node.height if node else 0
-
-    def _balance_factor(self, node):
-        return self._h(node.left) - self._h(node.right) if node else 0
-
-    def _update_height(self, node):
-        node.height = 1 + max(self._h(node.left), self._h(node.right))
-
-    def _rotate_right(self, z):
-        y = z.left
-        z.left = y.right
-        y.right = z
-        self._update_height(z)
-        self._update_height(y)
-        return y
-
-    def _rotate_left(self, z):
-        y = z.right
-        z.right = y.left
-        y.left = z
-        self._update_height(z)
-        self._update_height(y)
-        return y
-
-    def _insert_recursive(self, node, data):
-        if node is None:
-            return AVLNode(data)
-
-        if data.id_pasien < node.data.id_pasien:
-            node.left = self._insert_recursive(node.left, data)
-        elif data.id_pasien > node.data.id_pasien:
-            node.right = self._insert_recursive(node.right, data)
+            self._size += 1
+            return NodeBST(pasien)
+        if pasien.no_rm < node.data.no_rm:
+            node.left = self._insert(node.left, pasien)
+        elif pasien.no_rm > node.data.no_rm:
+            node.right = self._insert(node.right, pasien)
         else:
-            return node  # duplicate id_pasien, ignore
-
-        self._update_height(node)
-        balance = self._balance_factor(node)
-
-        # Left Left
-        if balance > 1 and data.id_pasien < node.left.data.id_pasien:
-            return self._rotate_right(node)
-        # Right Right
-        if balance < -1 and data.id_pasien > node.right.data.id_pasien:
-            return self._rotate_left(node)
-        # Left Right
-        if balance > 1 and data.id_pasien > node.left.data.id_pasien:
-            node.left = self._rotate_left(node.left)
-            return self._rotate_right(node)
-        # Right Left
-        if balance < -1 and data.id_pasien < node.right.data.id_pasien:
-            node.right = self._rotate_right(node.right)
-            return self._rotate_left(node)
-
+            node.pasien = pasien
         return node
 
-    def _search_recursive(self, node, id_pasien):
-        if node is None or node.data.id_pasien == id_pasien:
-            return node
-        if node.data.id_pasien < id_pasien:
-            return self._search_recursive(node.right, id_pasien)
-        return self._search_recursive(node.left, id_pasien)
+     # ---------- SEARCH ----------
+
+    def search(self, no_rm):
+        return self._search(self.root, no_rm)
+    
+    def _search(self, node, no_rm):
+        if node is None:
+            return None
+        if no_rm == node.data.no_rm:      # sebelumnya node.pasien.no_rm
+            return node.data
+        elif no_rm < node.data.no_rm:
+            return self._search(node.left, no_rm)
+        else:
+            return self._search(node.right, no_rm)
+            
+     # ---------- DELETE ----------
+
+    def delete(self, no_rm):
+        self.root, deleted = self._delete(self.root, no_rm)
+        return deleted
+
+    def _delete(self, node, no_rm):
+        if node is None:
+            return node, False
+ 
+        deleted = False
+        if no_rm < node.pasien.no_rm:
+            node.left, deleted = self._delete(node.left, no_rm)
+        elif no_rm > node.pasien.no_rm:
+            node.right, deleted = self._delete(node.right, no_rm)
+        else:
+            deleted = True
+            # Kasus 1 & 2: node punya <= 1 anak
+            if node.left is None:
+                self._size -= 1
+                return node.right, deleted
+            elif node.right is None:
+                self._size -= 1
+                return node.left, deleted
+            # Kasus 3: node punya 2 anak -> cari successor (terkecil di subtree kanan)
+            successor = self._min_node(node.right)
+            node.pasien = successor.pasien
+            node.right, _ = self._delete(node.right, successor.pasien.no_rm)
+        return node, deleted
+    
+    def _min_node(self, node):
+        while node.left is not None:
+            node = node.left
+        return node
+    
+     # ---------- TRAVERSAL: INORDER ----------
+
+    def traverseInorder(self):
+        hasil = []
+        self._inorder(self.root, hasil)
+        return hasil
+    
+    def _inorder(self, node, hasil):
+        if node:
+            self._inorder(node.left, hasil)
+            hasil.append(node.pasien)
+            self._inorder(node.right, hasil)
+    
+    # ---------- HEIGHT ----------
+
+    def height(self):
+        return self._height(self.root)
+    
+    def _height(self, node):
+        if node is None:
+            return -1
+        return 1 + max(self._height(node.left), self._height(node.right))
+    
+     # ---------- NODE COUNT ----------
+
+    def nodeCount(self):
+        return self._size
+    
+    def displayInorder(self):
+        data = self.traverseInorder()
+        if not data:
+            print("BST is empty || BST Kosong || Size: 0")
+            return
+        for p in data:
+            print(f"  RM-{p.no_rm} | {p.nama} | Keluhan: {p.keluhan} | "
+                  f"Prioritas: {p.prioritas}")
+            
+     # ---------- VISUALISASI ----------
+
+    def displayTree(self):
+        if self.root is None:
+            print("  (Tree kosong)")
+            return
+        self._display_tree(self.root, "", True)
+ 
+    def _display_tree(self, node, prefix, is_tail):
+        if node is None:
+            return
+        # subtree kanan digambar lebih dulu (muncul di atas)
+        self._display_tree(node.right, prefix + ("    " if is_tail else "│   "), False)
+        cabang = "└── " if is_tail else "┌── "
+        print(f"  {prefix}{cabang}RM-{node.pasien.no_rm} ({node.pasien.nama})")
+        # subtree kiri digambar setelahnya (muncul di bawah)
+        self._display_tree(node.left, prefix + ("    " if is_tail else "│   "), True)
+
